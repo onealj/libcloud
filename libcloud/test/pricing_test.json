@@ -11,6 +11,16 @@
         "baz": {
             "1": 5.00,
             "2": 6.00
+        },
+        "regional_driver": {
+            "small_size_id": {
+                "region1": 7.00,
+                "region2": 7.50
+            },
+            "large_size_id": {
+                "region1": 8.00,
+                "region2": 8.50
+            }
         }
     },
 

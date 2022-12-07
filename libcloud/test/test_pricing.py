@@ -42,6 +42,24 @@ class PricingTestCase(unittest.TestCase):
         self.assertEqual(libcloud.pricing.PRICING_DATA["compute"]["foo"]["1"], 1.0)
         self.assertEqual(libcloud.pricing.PRICING_DATA["compute"]["foo"]["2"], 2.0)
 
+    def test_get_pricing_regional_driver(self):
+        """Test a driver with an extra layer of information, such as region to determine pricing.
+        Pricing can get far more complex for some cloud providers.
+        """
+        self.assertNotIn("regional_driver", libcloud.pricing.PRICING_DATA["compute"])
+
+        pricing = libcloud.pricing.get_pricing(
+            driver_type="compute",
+            driver_name="regional_driver",
+            pricing_file_path=PRICING_FILE_PATH,
+        )
+        self.assertDictEqual(pricing["small_size_id"], {"region1": 7.00, "region2": 7.50})
+        self.assertDictEqual(pricing["large_size_id"], {"region1": 8.00, "region2": 8.50})
+
+        pricing_cache = libcloud.pricing.PRICING_DATA["compute"]["regional_driver"]
+        self.assertDictEqual(pricing_cache["small_size_id"], {"region1": 7.00, "region2": 7.50})
+        self.assertDictEqual(pricing_cache["large_size_id"], {"region1": 8.00, "region2": 8.50})
+
     def test_get_pricing_invalid_file_path(self):
         try:
             libcloud.pricing.get_pricing(
@@ -88,6 +106,25 @@ class PricingTestCase(unittest.TestCase):
         )
         self.assertEqual(price1, 2)
         self.assertEqual(price2, 3)
+
+    def test_get_size_price_region(self):
+        libcloud.pricing.PRICING_DATA["compute"]["regional_driver"] = {"small_size_id": {"region1": 7.00, "region2": 7.50}, "large_size_id": {"region1": 8.00, "region2": 8.50}}
+        price1 = libcloud.pricing.get_size_price(
+            driver_type="compute", driver_name="regional_driver", size_id="small_size_id", region="region1"
+        )
+        price2 = libcloud.pricing.get_size_price(
+            driver_type="compute", driver_name="regional_driver", size_id="small_size_id", region="region2"
+        )
+        price3 = libcloud.pricing.get_size_price(
+            driver_type="compute", driver_name="regional_driver", size_id="large_size_id", region="region1"
+        )
+        price4 = libcloud.pricing.get_size_price(
+            driver_type="compute", driver_name="regional_driver", size_id="large_size_id", region="region2"
+        )
+        self.assertEqual(price1, 7.0)
+        self.assertEqual(price2, 7.5)
+        self.assertEqual(price3, 8.0)
+        self.assertEqual(price4, 8.5)
 
     def test_invalid_pricing_cache(self):
         libcloud.pricing.PRICING_DATA["compute"]["foo"] = {2: 2}
@@ -155,10 +192,11 @@ class PricingTestCase(unittest.TestCase):
         self.assertEqual(pricing["1"], 1.0)
         self.assertEqual(pricing["2"], 2.0)
 
-        self.assertEqual(len(libcloud.pricing.PRICING_DATA["compute"]), 3)
+        self.assertEqual(len(libcloud.pricing.PRICING_DATA["compute"]), 4)
         self.assertTrue("foo" in libcloud.pricing.PRICING_DATA["compute"])
         self.assertTrue("bar" in libcloud.pricing.PRICING_DATA["compute"])
         self.assertTrue("baz" in libcloud.pricing.PRICING_DATA["compute"])
+        self.assertTrue("regional_driver" in libcloud.pricing.PRICING_DATA["compute"])
 
     def test_get_pricing_data_caching_cache_all(self):
         # Ensure we only cache pricing data in memory for requested drivers
@@ -174,10 +212,11 @@ class PricingTestCase(unittest.TestCase):
         self.assertEqual(pricing["1"], 1.0)
         self.assertEqual(pricing["2"], 2.0)
 
-        self.assertEqual(len(libcloud.pricing.PRICING_DATA["compute"]), 3)
+        self.assertEqual(len(libcloud.pricing.PRICING_DATA["compute"]), 4)
         self.assertTrue("foo" in libcloud.pricing.PRICING_DATA["compute"])
         self.assertTrue("bar" in libcloud.pricing.PRICING_DATA["compute"])
         self.assertTrue("baz" in libcloud.pricing.PRICING_DATA["compute"])
+        self.assertTrue("regional_driver" in libcloud.pricing.PRICING_DATA["compute"])
 
     def test_get_gce_image_price_non_premium_image(self):
         image_name = "debian-10-buster-v20220519"

@@ -74,7 +74,7 @@ def get_pricing_file_path(file_path=None):
 
 
 def get_pricing(driver_type, driver_name, pricing_file_path=None, cache_all=False):
-    # type: (str, str, Optional[str], bool) -> Optional[dict]
+    # type: (str, str, Optional[str], bool) -> Optional[Dict[str, Union[float, Dict[str, float]]]]
     """
     Return pricing for the provided driver.
 
@@ -99,9 +99,16 @@ def get_pricing(driver_type, driver_name, pricing_file_path=None, cache_all=Fals
     :param cache_all: True to cache pricing data in memory for all the drivers
                       and not just for the requested one.
 
-    :rtype: ``dict``
-    :return: Dictionary with pricing where a key name is size ID and
-             the value is a price.
+    :rtype: ``Optional[Dict[Union[str, int], Union[float, Dict[str, float]]]]``
+    :return: Dictionary with pricing where a key is a size ID (str or int, depending
+             on the driver) and the value is a price (float).
+             Example: returns {"micro": 0.02, "small": 0.065}).
+             For drivers with regional pricing, the key is a size ID
+             and the value is a Dictionary mapping the region to the price.
+             Example: {"a1.medium": {"us-east-1": 0.0255, "eu-central-1": 0.0291}}).
+
+    :raises: AttributeError if ``driver_type`` is not recognized (``VALID_PRICING_DRIVER_TYPES``)
+    :raises: KeyError if there is no pricing data for``driver_name``
     """
     cache_all = cache_all or CACHE_ALL_PRICING_DATA
 
@@ -111,7 +118,7 @@ def get_pricing(driver_type, driver_name, pricing_file_path=None, cache_all=Fals
     if driver_name in PRICING_DATA[driver_type]:
         return PRICING_DATA[driver_type][driver_name]
 
-    if not pricing_file_path:
+    if pricing_file_path is None:
         pricing_file_path = get_pricing_file_path(file_path=pricing_file_path)
 
     with open(pricing_file_path) as fp:
@@ -120,7 +127,7 @@ def get_pricing(driver_type, driver_name, pricing_file_path=None, cache_all=Fals
     pricing_data = json.loads(content)
     driver_pricing = pricing_data[driver_type][driver_name]
 
-    # NOTE: We only cache prices in memory for the the requested drivers.
+    # NOTE: We only cache prices in memory for the requested drivers.
     # This way we avoid storing massive pricing data for all the drivers in
     # memory
 
