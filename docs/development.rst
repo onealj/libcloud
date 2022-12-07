@@ -1,7 +1,7 @@
 Development
 ===========
 
-This page describes Libcloud development process and contains general
+This page describes the Libcloud development process and contains general
 guidelines and information on how to contribute to the project.
 
 Contributing
@@ -25,13 +25,13 @@ General contribution guidelines
 * All the functions and methods must contain Sphinx docstrings which are used
   to generate the API documentation. For more information, refer to the
   :ref:`Docstring conventions <docstring-conventions>` section below.
-* If you are adding a new feature, make sure to add a corresponding
+* If you are adding a new feature, make sure to add corresponding
   documentation.
 
 Code style guide
 ----------------
 
-* We follow `The Black code style`_ and automatically enforce it for all the
+* We follow `The Black code style`_ and automatically enforce it for all
   new code using black tool. You can re-format your code using black by
   running ``black`` tox target (``tox -eblack``).
 * We enforce consistent import ordering using the isort library. Imports can be
@@ -63,8 +63,8 @@ checkout:
     ln -s contrib/pre-commit.sh .git/hooks/pre-commit
 
 After you have installed this hook it will automatically check modified Python
-files for violations before a commit. If a violation is found, commit will be
-aborted.
+files for violations before a commit. If a violation is found, the commit will
+be aborted.
 
 .. _code-conventions:
 
@@ -72,7 +72,7 @@ Code conventions
 ----------------
 
 This section describes some general code conventions you should follow when
-writing a Libcloud code.
+contributing to Libcloud.
 
 1. Import ordering
 ~~~~~~~~~~~~~~~~~~
@@ -220,13 +220,32 @@ Bad (please avoid):
 5. When returning a dictionary, document its structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Dynamic nature of Python can be very nice and useful, but if (ab)use it in a
-wrong way it can also make it hard for the API consumer to understand what is
-going on and what kind of values are being returned.
-
 If you have a function or a method which returns a dictionary, make sure to
 explicitly document in the docstring which keys the returned dictionary
 contains.
+
+.. sourcecode:: python
+
+    def get_pricing(driver_type, driver_name):
+        # type: (str, str) -> Optional[Dict[str, float]]
+        """
+        Return pricing for the provided driver.
+        NOTE: This method will also cache data for the requested driver
+        memory.
+        We intentionally only cache data for the requested driver and not all the
+        pricing data since the whole pricing data is quite large (~2 MB). This
+        way we avoid unnecessary memory overhead.
+        :type driver_type: ``str``
+        :param driver_type: Driver type ('compute' or 'storage')
+        :type driver_name: ``str``
+        :param driver_name: Driver name
+        :rtype: ``Optional[Dict[str, float]]``
+        :return: Dictionary with pricing where a key is size ID ("small") and
+                 the value is a price
+        """
+        if driver_name in PRICING_DATA[driver_type]:
+            return PRICING_DATA[driver_type][driver_name]
+
 
 6. Prefer to use "is not None" when checking if a variable is provided or defined
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -411,24 +430,20 @@ the ``notify project`` field, enter ``Libcloud``.
 Supporting Multiple Python Versions
 -----------------------------------
 
-Libcloud supports a variety of Python versions so your code also needs to work
-with all the supported versions. This means that in some cases you will need to
-include extra code to make sure it works in all the supported versions.
+Libcloud generally supports all currently supported versions and occasionally
+a recently discontinued version of Python at the time of each major Libcloud
+release. This means that contributed changes may require extra code to work
+on all supported versions.
+Python version compatibility is checked by tox in our CI/CD system.
 
 Some examples which show how to handle those cases are described below.
-
-Context Managers
-~~~~~~~~~~~~~~~~
-
-Context managers aren't available in Python 2.5 by default. If you want to use
-them make sure to put from ``__future__ import with_statement`` on top of the
-file where you use them.
 
 Utility functions for cross-version compatibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can find a lot of utility functions which make code easier to work with
-Python 2.x and 3.x in ``libcloud.utils.py3`` module.
+Prior to Libcloud 3.0.0 (when support for Python 2.x was dropped), the
+``libcloud.utils.py3`` module contained utility functions to backport
+Python 3 features to Python 2.
 
 You can find some more information on changes which are involved in making the
 code work with multiple versions on the following link -
